@@ -12,7 +12,7 @@ import mujoco
 import numpy as np
 
 from src.config.dance_choreography import DEFAULT_DANCE_CHOREOGRAPHY
-from src.config.spring_dance import (
+from src.config.g1_motion import (
     CONFIG_DIR,
     DEFAULT_TRACK_MOTION,
     G1_MODEL_XML,
@@ -293,7 +293,7 @@ def parse_args() -> argparse.Namespace:
     """Parse reference-motion generation options."""
     defaults = DEFAULT_DANCE_CHOREOGRAPHY
     parser = argparse.ArgumentParser(
-        description="Generate a rhythmic multi-section G1 dance reference for PPO."
+        description="Generate a rhythmic multi-section G1 dance reference."
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_TRACK_MOTION)
     parser.add_argument("--model-xml", type=Path, default=G1_MODEL_XML)

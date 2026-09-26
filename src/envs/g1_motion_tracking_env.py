@@ -36,9 +36,10 @@ def _quaternion_rotation_error(target: np.ndarray, actual: np.ndarray) -> np.nda
 
 
 class G1MotionTrackingEnv(gym.Env[np.ndarray, np.ndarray]):
-    """Track a G1 dance reference with PD control and PPO residual torque.
+    """Track a G1 dance reference with PD control and learned residual torque.
 
-    A low-level pelvis stabilizer follows the reference root pose. PPO controls the
+    A low-level pelvis stabilizer follows the reference root pose.
+    The policy controls the
     29 actuated joints and learns to maintain choreography under randomized resets,
     controller gains, and external pushes.
     """
@@ -417,7 +418,7 @@ class G1MotionTrackingEnv(gym.Env[np.ndarray, np.ndarray]):
             self.data.qfrc_applied.fill(0.0)
             self.data.qfrc_applied[self.joint_dof_addresses] = total_torque
 
-            # A low-level pelvis stabilizer lets PPO focus on dance tracking and recovery.
+            # A low-level pelvis stabilizer lets the policy focus on dance tracking and recovery.
             root_position_error = self.reference_root_pos[frame] - self.data.qpos[:3]
             root_linear_velocity_error = (
                 self.reference_root_vel[frame] - self.data.qvel[:3]

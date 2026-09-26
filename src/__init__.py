@@ -1,1 +1,1 @@
-"""Source package for MuJoCo robot reinforcement learning."""
+"""Source package for robot learning and recursive self-improvement."""

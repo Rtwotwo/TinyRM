@@ -1,66 +1,52 @@
-# Unitree G1 Procedural Dance Tracking
+# TinyRM: Structured Reward and Recursive Self-Improvement Demo
 
-A MuJoCo closed-loop PPO workflow for tracking a fixed, procedural G1 dance routine. The project borrows ideas from embodied-robotics examples, including Datawhale, but it does not extract dance motion from a Spring Festival Gala video and does not require PromptHMR, SMPL-X, GMR, or downloaded Datawhale model files.
+This repository contains a compact reinforcement learning demo for a grid robot. The agent collects a key, avoids walls and hazards, and reaches a goal. The small environment makes reward learning, value estimation, and the recursive improvement loop easy to inspect. It is not a trained Unitree G1 controller.
 
-## Control pipeline
+## Architecture
 
-The reference trajectory provides the beat-synchronized motion. PPO observes the G1 state and learns bounded torque corrections for the 29 actuated joints. A low-level PD controller and pelvis stabilizer support the simulation.
+- A structured reward ensemble learns six signed, context-conditioned components from synthetic trajectory preferences.
+- Separate spatial actor and value networks are optimized with PPO and generalized advantage estimation.
+- Each improvement round gathers new trajectories, asks the synthetic judge for uncertain preference labels, retrains the reward ensemble, trains a candidate policy, and accepts it only if held-out task evaluation improves.
+- Expert demonstration states provide an adaptive reset curriculum. This is an auxiliary training technique; RSI here means Recursive Self-Improvement.
 
-The 32-second choreography runs at 112 BPM and contains seven phrases: arm raise, step-touch and hip groove, diagonal punches, alternating knee lifts, overhead arm wave, fast footwork with double punches, and a wide final pose.
+The judge supplies labels and acceptance scores. PPO uses the learned reward, not the judge's per-step score.
 
-## Environment
+## Run in the yolo environment
 
-Use the existing Conda environment named yolo. Install the project dependencies without replacing its PyTorch build:
+From the repository root:
 
 ~~~powershell
-conda run -n yolo python -m pip install --no-deps -r requirements.txt
+conda run -n yolo python -m src.trainer.run_demo
 ~~~
 
-The G1 MuJoCo model is agents/robots/unitree_g1/g1_mocap_29dof.xml.
+To choose a device or a shorter run:
 
-## Generate the dance reference
+~~~powershell
+conda run -n yolo python -m src.trainer.run_demo --device cuda --rounds 2 --rollout-steps 512
+~~~
+
+A run writes its configuration, checkpoints, metrics, independent evaluation, and learning plot under exp/rsi_demo/<run-id>/. The pre-existing run exp/rsi_demo/20260926_205844/ contains a completed example.
+
+Evaluate a checkpoint on new seeds:
+
+~~~powershell
+conda run -n yolo python -m src.trainer.evaluate exp/rsi_demo/20260926_205844/champion_round_3.pt --episodes 64 --seed 140000
+~~~
+
+## Source layout
+
+- src/config/demo.py: experiment parameters.
+- src/envs/grid_robot.py: navigation environment and structured transition features.
+- src/network/actor_critic.py: separate policy and value encoders.
+- src/network/reward_model.py: interpretable reward ensemble.
+- src/trainer/ppo.py: PPO rollout, GAE, and optimization.
+- src/trainer/rsi.py: preference updates, candidate evaluation, and acceptance gate.
+- src/trainer/reference_states.py: adaptive demonstration-state curriculum.
+
+The G1 MuJoCo model and procedural dance reference generator remain available in agents/robots/unitree_g1/ and src/trainer/generate_g1_dance_motion.py. Generate a reference with:
 
 ~~~powershell
 conda run -n yolo python -m src.trainer.generate_g1_dance_motion
 ~~~
 
-The generated reference and metadata are stored under exp/spring_dance/.
-
-## Train PPO
-
-~~~powershell
-conda run -n yolo python -m src.trainer.train_g1_motion_tracking --total-timesteps 2000000 --n-envs 4 --device cuda
-~~~
-
-The policy optimizer uses CUDA when available. MuJoCo physics runs on the CPU. Checkpoints, final models, TensorBoard events, monitor CSV files, run configurations, and evaluation reports are kept under exp/spring_dance/.
-
-## View training progress
-
-~~~powershell
-conda run -n yolo tensorboard --logdir exp/spring_dance/logs/tensorboard --port 6006
-~~~
-
-Open http://localhost:6006 and inspect total timesteps, FPS, mean episode reward, value loss, and explained variance.
-
-## Evaluate and record a rollout
-
-Pass a saved PPO checkpoint or final model to the evaluator:
-
-~~~powershell
-conda run -n yolo python -m src.trainer.evaluate_g1_motion_tracking --model exp/spring_dance/models/<model-file>.zip --episodes 1 --render-video
-~~~
-
-Evaluation summaries are saved under exp/spring_dance/evaluations/; rendered videos are saved under exp/spring_dance/videos/.
-
-## Source layout
-
-~~~text
-agents/robots/unitree_g1/         G1 MJCF and mesh assets
-src/config/                       Choreography and PPO settings
-src/network/                      PPO actor/critic policy architecture
-src/envs/                         Closed-loop G1 motion-tracking environment
-src/trainer/                      Reference generation, training, and evaluation
-exp/spring_dance/                 Models, checkpoints, logs, reports, and videos
-~~~
-
-The PPO implementation is provided by [Stable-Baselines3](https://github.com/DLR-RM/stable-baselines3). The algorithm is described in Schulman et al., [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347).
+Historical G1 experiment artifacts remain under exp/spring_dance/. The earlier G1 PPO training and evaluation entry points have been removed.

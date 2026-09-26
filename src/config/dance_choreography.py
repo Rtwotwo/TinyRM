@@ -1,4 +1,4 @@
-"""Configuration for G1 procedural dance references and PPO tracking."""
+"""Configuration for G1 procedural dance references and motion tracking."""
 
 from dataclasses import dataclass
 
