@@ -1,0 +1,5 @@
+# Runtime dependencies for the MuJoCo closed-loop PPO workflow.
+mujoco>=3.2,<4
+gymnasium>=1.0,<2
+stable-baselines3>=2.5,<3
+tensorboard>=2.16
